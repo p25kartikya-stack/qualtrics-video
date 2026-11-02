@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Video Study</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#172339;background:#f4f7fb}body{margin:0;padding:24px}.wrap{max-width:800px;margin:5vh auto;background:white;padding:clamp(20px,5vw,42px);border-radius:18px;box-shadow:0 10px 40px #142b4815}h1{margin-top:0}p{line-height:1.55;color:#48566c}.player{aspect-ratio:16/9;background:#111;border-radius:12px;overflow:hidden}.player iframe{width:100%;height:100%;border:0}button,a.action{border:0;border-radius:9px;padding:13px 18px;background:#155bd6;color:white;font:inherit;cursor:pointer;display:inline-block;text-decoration:none}button:disabled{opacity:.5;cursor:not-allowed}.muted{font-size:.9rem}#error{color:#a12d20}#continue{display:none;margin-top:14px}#loading{padding:60px 0;text-align:center}
+</style>
+</head>
+<body><main class="wrap"><h1>Video study</h1><p>Please watch the video in full. When it finishes, you will automatically proceed to the questionnaire.</p><div id="loading">Loading video…</div><div class="player" id="playerBox" hidden><div id="player"></div></div><p id="status" role="status" aria-live="polite">Preparing your video.</p><p id="error" role="alert"></p><button id="continue" type="button">Continue to questionnaire</button><p class="muted">If playback is blocked, check your browser's content restrictions. Please do not refresh during playback.</p></main>
+<script>
+'use strict';
+const SURVEY_URL='https://qualtricsxmhkyq2p2l3.qualtrics.com/jfe/form/SV_dg7ERBZTKsc9av4';
+const VIDEOS={A:'cysPx2ELB7c',B:'fnErDQU5SvI',C:'2lyWFP8qOBI',D:'_jjnr8P8ZHI'};
+const statusEl=document.getElementById('status');
+const errorEl=document.getElementById('error');
+const nextBtn=document.getElementById('continue');
+const keys=Object.keys(VIDEOS);
+// Persist assignment for this browser tab across refreshes, but do not reuse it in future tabs.
+let condition;
+try{condition=sessionStorage.getItem('videoStudyCondition');}catch(e){}
+if(!Object.hasOwn(VIDEOS,condition)){
+  const random=new Uint32Array(1);
+  if(window.crypto && crypto.getRandomValues){crypto.getRandomValues(random);condition=keys[Math.floor(random[0]/4294967296*keys.length)];}
+  else{condition=keys[Math.floor(Math.random()*keys.length)];}
+  try{sessionStorage.setItem('videoStudyCondition',condition);}catch(e){}
+}
+const destination=new URL(SURVEY_URL);
+destination.searchParams.set('Condition',condition);
+let completed=false;
+function goToSurvey(){window.location.assign(destination.href);}
+function finish(){if(completed)return;completed=true;statusEl.textContent='Video complete. Opening your questionnaire…';nextBtn.style.display='inline-block';nextBtn.disabled=false;setTimeout(goToSurvey,1200);}
+nextBtn.addEventListener('click',()=>{if(completed)goToSurvey();});
+let player;
+window.onYouTubeIframeAPIReady=function(){
+  document.getElementById('loading').hidden=true;
+  document.getElementById('playerBox').hidden=false;
+  statusEl.textContent='Press Play to watch the video.';
+  try{
+    player=new YT.Player('player',{videoId:VIDEOS[condition],playerVars:{playsinline:1,rel:0,origin:location.origin},events:{
+      onStateChange:function(event){if(event.data===YT.PlayerState.ENDED)finish();else if(event.data===YT.PlayerState.PLAYING)statusEl.textContent='Video playing. Please watch until it finishes.';},
+      onError:function(event){errorEl.textContent='The video could not be played here (YouTube error '+event.data+'). Please contact the study organizer.';}
+    }});
+  }catch(err){errorEl.textContent='Could not initialize video player. Please contact the study organizer.';}
+};
+const script=document.createElement('script');script.src='https://www.youtube.com/iframe_api';script.onerror=()=>{document.getElementById('loading').textContent='YouTube could not load.';errorEl.textContent='Check network or browser restrictions and try again.';};document.head.appendChild(script);
+</script></body></html>
